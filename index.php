@@ -4,7 +4,13 @@ require('vendor/autoload.php');
 $configFile = file_get_contents('config.json');
 $config = json_decode($configFile);
 
-$app = new Slim\App();
+$configuration = [
+    'settings' => [
+        'displayErrorDetails' => true,
+    ],
+];
+$c = new \Slim\Container($configuration);
+$app = new \Slim\App($c);
 
 $app->get('/{platform}/RELEASES', function($request, $response, $args){
   global $config;
@@ -24,13 +30,16 @@ $app->get('/{platform}/RELEASES', function($request, $response, $args){
       $re = '/-(.*?)-/';
       preg_match($re, $pkg, $matches);
 
-      $version = Naneau\SemVer\Parser::parse($matches[1]);
+      if ($matches[1] != "") {
+        $version = Naneau\SemVer\Parser::parse($matches[1]);
 
-      if(Naneau\SemVer\Compare::greaterThan($version, $localVersion) || Naneau\SemVer\Compare::equals($version, $localVersion)){
-        $hash = sha1_file(dirname(__FILE__) . '/releases/' . $platform . '/' .$pkg);
-        $filesize = filesize(dirname(__FILE__) . '/releases/' . $platform . '/' .$pkg);
+        if(Naneau\SemVer\Compare::greaterThan($version, $localVersion) || Naneau\SemVer\Compare::equals($version, $localVersion)){
 
-        $response->getBody()->write($hash . ' ' . $config->baseurl . '/releases/' . $platform . '/' . $pkg . ' ' . $filesize . "\r\n");
+          $hash = sha1_file(dirname(__FILE__) . '/releases/' . $platform . '/' .$pkg);
+          $filesize = filesize(dirname(__FILE__) . '/releases/' . $platform . '/' .$pkg);
+
+          $response->getBody()->write($hash . ' ' . $config->baseurl . '/releases/' . $platform . '/' . $pkg . ' ' . $filesize . "\r\n");
+        }
       }
     }
   }
